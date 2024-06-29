@@ -1,0 +1,48 @@
+name: aquarisk
+description: A new Flutter project.
+version: 1.0.0+1
+environment: 
+  sdk: '>=2.12.0 <3.0.0'
+dependencies: 
+  flutter: 
+    sdk: flutter
+  get: ^4.6.6
+  connectivity_plus: ^5.0.2
+  shared_preferences: ^2.2.2
+  cached_network_image: ^3.3.0
+  flutter_svg: ^2.0.9
+  intl: ^0.18.0
+  firebase_core: ^2.28.0
+  firebase_auth: ^4.19.0
+  cloud_firestore: ^4.16.0
+  top_snackbar_flutter: ^3.1.0
+  tflite_flutter: ^0.10.4
+  carousel_slider: ^4.2.1
+  flutter_launcher_icons: ^0.13.1
+
+dev_dependencies: 
+  flutter_test: 
+    sdk: flutter
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/icon.png"
+flutter: 
+  uses-material-design: true
+  assets: 
+    - assets/
+    - assets/images/
+    - assets/model/neural_network_model.tflite
+  fonts:
+    - family: Poppins
+      fonts: 
+        - asset: assets/fonts/PoppinsMedium.ttf
+          weight: 500
+        - asset: assets/fonts/PoppinsRegular.ttf
+          weight: 400
+        - asset: assets/fonts/PoppinsSemiBold.ttf
+          weight: 600
+    - family: Inter
+      fonts: 
+        - asset: assets/fonts/InterRegular.ttf
+          weight: 400

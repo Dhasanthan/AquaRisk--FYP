@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "510918780577",
+    "project_id": "aquarisk-a2cd2",
+    "storage_bucket": "aquarisk-a2cd2.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510918780577:android:a0ef2870c990477885b2e0",
+        "android_client_info": {
+          "package_name": "com.aquarisk.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBghnxnUZT86PLHq0v_7Slrt21jdquQat4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
