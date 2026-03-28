@@ -1,147 +1,195 @@
-import 'dart:typed_data';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 import '../../../core/app_export.dart';
-import '../models/predict_flood_model.dart';
-import 'package:flutter/material.dart';
 
 class PredictFloodController extends GetxController {
-  PredictFloodController(this.predictFloodModelObj);
+  final TextEditingController waterLevelController = TextEditingController();
+  final TextEditingController rainFallController = TextEditingController();
 
-  TextEditingController waterLevelController = TextEditingController();
+  final RxString selectedDistrict = 'Matara'.obs;
+  final RxList<String> districtList = <String>[
+    'Matara',
+    'Trincomalee',
+    'Kegalle',
+    'Polonnaruwa',
+    'Kurunegala',
+  ].obs;
 
-  TextEditingController rainFallController = TextEditingController();
-
-  TextEditingController temperatureController = TextEditingController();
-
-  DateTime dateTime = DateTime.timestamp();
-
-  String district = "";
-
-  Rx<PredictFloodModel> predictFloodModelObj;
-
-  SelectionPopupModel? selectedDropDownValue;
+  final RxString predictionText = ''.obs;
+  final RxString probabilityText = ''.obs;
+  final RxBool isLoading = false.obs;
 
   bool result = false;
 
   Interpreter? _interpreter;
   bool _isModelLoaded = false;
 
+  Map<String, dynamic>? _featureMappings;
+  Map<String, dynamic>? _targetMapping;
+  Map<String, dynamic>? _scalerParams;
+
   @override
   void onInit() {
-    // TODO: implement onInit
     super.onInit();
-    _loadModel();
+    loadModelAndFiles();
   }
 
   @override
   void onClose() {
+    waterLevelController.dispose();
+    rainFallController.dispose();
+    _interpreter?.close();
     super.onClose();
-    waterLevelController.clear();
-    rainFallController.clear();
-    temperatureController.clear();
   }
 
-  onSelected(SelectionPopupModel value) {
-    for (var element in predictFloodModelObj.value.dropdownItemList.value) {
-      element.isSelected = false;
-      if (element.id == value.id) {
-        element.isSelected = true;
-        district = element.title;
-        print(district);
-      }
-    }
-    predictFloodModelObj.value.dropdownItemList.refresh();
-  }
-
-  Future<void> _loadModel() async {
+  Future<void> loadModelAndFiles() async {
     try {
+      isLoading.value = true;
+
+      final modelBytes = await rootBundle.load(
+        'assets/model/AquaRisk_model.tflite',
+      );
+      debugPrint('Model found: ${modelBytes.lengthInBytes} bytes');
+
       _interpreter = await Interpreter.fromAsset(
-          'assets/model/neural_network_model.tflite');
+        'assets/model/AquaRisk_model.tflite',
+      );
+      debugPrint('Interpreter created successfully');
+
+      final featureMappingsJson = await rootBundle.loadString(
+        'assets/model/AquaRiskfeature_mappings.json',
+      );
+      final targetMappingJson = await rootBundle.loadString(
+        'assets/model/AquaRisktarget_mapping.json',
+      );
+      final scalerParamsJson = await rootBundle.loadString(
+        'assets/model/AquaRiskscaler_params.json',
+      );
+
+      _featureMappings =
+      json.decode(featureMappingsJson) as Map<String, dynamic>;
+      _targetMapping = json.decode(targetMappingJson) as Map<String, dynamic>;
+      _scalerParams = json.decode(scalerParamsJson) as Map<String, dynamic>;
 
       _isModelLoaded = true;
+      debugPrint('All assets loaded successfully');
     } catch (e) {
-      print('Failed to load TensorFlow Lite model: $e');
+      debugPrint('Load error: $e');
+      Get.snackbar(
+        'Model Load Error',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  double _convertMetersToFeet(double meters) {
-    return meters * 3.28084;
-  }
-
-  double _convertMillimetersToInches(double millimeters) {
-    return millimeters * 0.0393701;
-  }
-
-  void predictFlood() {
-    if (!_isModelLoaded) {
-      print('TensorFlow Lite model is not loaded.');
+  Future<void> predictFlood() async {
+    if (!_isModelLoaded || _interpreter == null) {
+      Get.snackbar(
+        'Error',
+        'Model is not loaded yet.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
     try {
-      double waterLevel = double.parse(waterLevelController.text);
-      double rainFall = double.parse(rainFallController.text);
-      double temperature = double.parse(temperatureController.text);
+      isLoading.value = true;
 
-      double waterLevelInFeet = _convertMetersToFeet(waterLevel);
-      double rainFallInInches = _convertMillimetersToInches(rainFall);
+      final double rainfall = double.parse(rainFallController.text.trim());
+      final double riverWaterLevel =
+      double.parse(waterLevelController.text.trim());
+      final String location = selectedDistrict.value;
 
-      List<double> inputData = [
-        waterLevelInFeet,
-        rainFallInInches,
-        temperature
-      ];
-
-      if (district == 'Ratnapura') {
-        inputData.add(1);
-      } else if (district == 'Kalutara') {
-        inputData.add(2);
-      } else {
-        inputData.add(0);
+      if (location.isEmpty) {
+        throw Exception('Please select a district.');
       }
 
-      List<double> scaledInputData = _scaleInputData(inputData);
+      final locationMap =
+      Map<String, dynamic>.from(_featureMappings!['Location'] as Map);
 
-      var inputTensor = Float32List.fromList(scaledInputData);
+      if (!locationMap.containsKey(location)) {
+        throw Exception('District "$location" not found in model mapping.');
+      }
 
-      var outputTensor = List.filled(1, 0).reshape([1, 1]);
+      final featureOrder =
+      List<String>.from(_scalerParams!['feature_order'] as List);
+
+      final mean = List<double>.from(
+        (_scalerParams!['mean'] as List).map((e) => (e as num).toDouble()),
+      );
+
+      final scale = List<double>.from(
+        (_scalerParams!['scale'] as List).map((e) => (e as num).toDouble()),
+      );
+
+      final rawFeatures = <String, double>{
+        'Rainfall': rainfall,
+        'River_Water_Level': riverWaterLevel,
+        'Location': (locationMap[location] as num).toDouble(),
+      };
+
+      final inputData = <double>[];
+      for (int i = 0; i < featureOrder.length; i++) {
+        final featureName = featureOrder[i];
+        final rawValue = rawFeatures[featureName];
+
+        if (rawValue == null) {
+          throw Exception('Missing feature: $featureName');
+        }
+
+        final scaledValue = (rawValue - mean[i]) / scale[i];
+        inputData.add(scaledValue);
+      }
+
+      debugPrint('Prepared input: $inputData');
+
+      final inputTensor = [inputData];
+      final outputTensor = List.generate(1, (_) => List.filled(2, 0.0));
 
       _interpreter!.run(inputTensor, outputTensor);
 
-      double prediction = outputTensor[0][0];
+      final probs = List<double>.from(outputTensor[0]);
+      final predictedIndex = probs[0] > probs[1] ? 0 : 1;
+      final predictedLabel =
+          _targetMapping?[predictedIndex.toString()]?.toString() ?? '0';
 
-      result = prediction >= 0.9 ? true : false;
-      print(prediction);
+      result = predictedLabel == '1';
 
+      predictionText.value = result ? 'Flood Risk' : 'No Flood Risk';
+      probabilityText.value =
+      'No Flood: ${(probs[0] * 100).toStringAsFixed(2)}%\n'
+          'Flood: ${(probs[1] * 100).toStringAsFixed(2)}%';
 
-      Get.toNamed(AppRoutes.floodWarningScreen, arguments: {
-        'district': district,
-        'waterLevel': waterLevelController.text,
-        'rainfall': rainFallController.text,
-        'temperature': temperatureController.text,
-        'prediction': result,
-      });
+      debugPrint('Probabilities: $probs');
+      debugPrint('Predicted label: $predictedLabel');
+      debugPrint('Result: $result');
+
+      Get.toNamed(
+        AppRoutes.floodWarningScreen,
+        arguments: {
+          'district': location,
+          'waterLevel': waterLevelController.text,
+          'rainfall': rainFallController.text,
+          'prediction': result,
+        },
+      );
     } catch (e) {
-      print('Error performing prediction: $e');
+      debugPrint('Prediction error: $e');
+      Get.snackbar(
+        'Prediction Error',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
     }
-  }
-
-  List<double> _scaleInputData(List<double> inputData) {
-    double meanWaterLevel = 40.0;
-    double stdDevWaterLevel = 10.0;
-    double meanRainFall = 20.0;
-    double stdDevRainFall = 5.0;
-    double meanTemperature = 5.0;
-    double stdDevTemperature = 2.0;
-
-    List<double> scaledData = [
-      (inputData[0] - meanWaterLevel) / stdDevWaterLevel,
-      (inputData[1] - meanRainFall) / stdDevRainFall,
-      (inputData[2] - meanTemperature) / stdDevTemperature,
-    ];
-
-    return scaledData;
   }
 }

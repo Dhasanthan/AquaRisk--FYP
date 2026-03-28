@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
-
-import 'package:aquarisk/widgets/custom_drop_down.dart';
-import 'package:aquarisk/widgets/custom_text_form_field.dart';
-import 'package:aquarisk/widgets/custom_elevated_button.dart';
-import 'package:aquarisk/core/app_export.dart';
+import 'package:get/get.dart';
 import 'controller/predict_flood_controller.dart';
-import 'models/predict_flood_model.dart';
 
 class PredictFloodPage extends StatefulWidget {
-  PredictFloodPage({Key? key}) : super(key: key);
+  const PredictFloodPage({Key? key}) : super(key: key);
 
   @override
   State<PredictFloodPage> createState() => _PredictFloodPageState();
@@ -16,148 +11,217 @@ class PredictFloodPage extends StatefulWidget {
 
 class _PredictFloodPageState extends State<PredictFloodPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
-  PredictFloodController controller =
-  Get.put(PredictFloodController(PredictFloodModel().obs));
+  final PredictFloodController controller = Get.put(PredictFloodController());
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).primaryColor,
-          title: Center(
-            child: Text(
-              "msg_predict_flood_possibility".tr,
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-          automaticallyImplyLeading: false,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Form(
-            key: _formKey,
-            child: Container(
-              width: double.maxFinite,
-              decoration: AppDecoration.fillWhiteA,
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(vertical: 22.v),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Predict Flood Possibility'),
+        centerTitle: true,
+      ),
+      body: Obx(
+            () => Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel("lbl_district".tr),
-                    _buildDropDown(),
-                    SizedBox(height: 16.v),
-                    _buildLabel("lbl_water_level".tr),
-                    _buildMeasurement(),
-                    SizedBox(height: 16.v),
-                    _buildLabel("lbl_rainfall".tr),
-                    _buildInput(),
-                    SizedBox(height: 16.v),
-                    _buildLabel("lbl_temperature".tr),
-                    _buildInput1(),
-                    SizedBox(height: 40.v),
-                    _buildPredictNow(),
-                    SizedBox(height: 5.v),
+                    const Text(
+                      'District',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: controller.selectedDistrict.value.isEmpty
+                          ? null
+                          : controller.selectedDistrict.value,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                      ),
+                      iconEnabledColor: Colors.black,
+                      items: controller.districtList.map((district) {
+                        return DropdownMenuItem<String>(
+                          value: district,
+                          child: Text(
+                            district,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          controller.selectedDistrict.value = value;
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Select District',
+                        hintStyle: const TextStyle(color: Colors.black54),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    const Text(
+                      'Water Level',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: controller.waterLevelController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Eg: 3.13',
+                        suffixText: 'm',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter water level';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    const Text(
+                      'Rainfall',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: controller.rainFallController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Eg: 85.12',
+                        suffixText: 'mm',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter rainfall';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            controller.predictFlood();
+                          }
+                        },
+                        child: const Text(
+                          'Predict',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    if (controller.predictionText.value.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: controller.predictionText.value == 'Flood Risk'
+                              ? Colors.red.shade50
+                              : Colors.green.shade50,
+                          border: Border.all(
+                            color: controller.predictionText.value == 'Flood Risk'
+                                ? Colors.red
+                                : Colors.green,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              controller.predictionText.value,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: controller.predictionText.value == 'Flood Risk'
+                                    ? Colors.red
+                                    : Colors.green,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(controller.probabilityText.value),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
-          ),
+
+            if (controller.isLoading.value)
+              Container(
+                color: Colors.black.withOpacity(0.15),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildLabel(String label) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        label,
-        style: theme.textTheme.titleSmall,
-      ),
-    );
-  }
-
-  Widget _buildDropDown() {
-    return CustomDropDown(
-      icon: Container(
-        margin: EdgeInsets.fromLTRB(30.h, 12.v, 16.h, 12.v),
-        child: CustomImageView(
-          imagePath: ImageConstant.imgArrowdown,
-          height: 24.adaptSize,
-          width: 24.adaptSize,
-        ),
-      ),
-      hintText: "Select District",
-      items: controller.predictFloodModelObj.value.dropdownItemList.value,
-      onChanged: (value) {
-        controller.onSelected(value);
-      },
-    );
-  }
-
-  Widget _buildMeasurement() {
-    return CustomTextFormField(
-      textInputType: TextInputType.number,
-      controller: controller.waterLevelController,
-      suffix: Text("m"),
-      hintStyle: TextStyle(color: Colors.grey),
-      hintText: "Eg:3.13".tr,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter water level';
-        }
-        // Add additional validation if needed
-        return null;
-      },
-    );
-  }
-
-  Widget _buildInput() {
-    return CustomTextFormField(
-      textInputType: TextInputType.number,
-      controller: controller.rainFallController,
-      suffix: Text("mm"),
-      hintStyle: TextStyle(color: Colors.grey),
-      hintText: "Eg:85.12".tr,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter rainfall';
-        }
-        // Add additional validation if needed
-        return null;
-      },
-    );
-  }
-
-  Widget _buildInput1() {
-    return CustomTextFormField(
-      textInputType: TextInputType.number,
-      controller: controller.temperatureController,
-      hintStyle: TextStyle(color: Colors.grey),
-      hintText: "Eg:45.15",
-      suffix: Text("°C"),
-      textInputAction: TextInputAction.done,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter temperature';
-        }
-        // Add additional validation if needed
-        return null;
-      },
-    );
-  }
-
-  Widget _buildPredictNow() {
-    return CustomElevatedButton(
-      text: "Predict",
-      onPressed: () {
-        if (_formKey.currentState!.validate()) {
-          controller.predictFlood();
-        }
-      },
     );
   }
 }

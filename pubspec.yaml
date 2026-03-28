@@ -16,7 +16,7 @@ dependencies:
   firebase_auth: ^4.19.0
   cloud_firestore: ^4.16.0
   top_snackbar_flutter: ^3.1.0
-  tflite_flutter: ^0.10.4
+  tflite_flutter: ^0.11.0
   carousel_slider: ^4.2.1
   flutter_launcher_icons: ^0.13.1
 
@@ -32,7 +32,11 @@ flutter:
   assets: 
     - assets/
     - assets/images/
-    - assets/model/neural_network_model.tflite
+    - assets/model/AquaRisk_model.tflite
+    - assets/model/AquaRiskfeature_mappings.json
+    - assets/model/AquaRiskscaler_params.json
+    - assets/model/AquaRisktarget_mapping.json
+
   fonts:
     - family: Poppins
       fonts: 

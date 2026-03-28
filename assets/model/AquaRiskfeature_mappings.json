@@ -1,0 +1,24 @@
+{
+  "Location": {
+    "Ampara": 0,
+    "Anuradhapura": 1,
+    "Badulla": 2,
+    "Batticaloa": 3,
+    "Colombo": 4,
+    "Galle": 5,
+    "Gampaha": 6,
+    "Jaffna": 7,
+    "Kalutara": 8,
+    "Kandy": 9,
+    "Kegalle": 10,
+    "Kilinochchi": 11,
+    "Kurunegala": 12,
+    "Matale": 13,
+    "Matara": 14,
+    "Monaragala": 15,
+    "Polonnaruwa": 16,
+    "Puttalam": 17,
+    "Ratnapura": 18,
+    "Trincomalee": 19
+  }
+}

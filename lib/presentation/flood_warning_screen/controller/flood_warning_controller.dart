@@ -7,38 +7,32 @@ import 'package:top_snackbar_flutter/top_snack_bar.dart';
 import '../../../core/app_export.dart';
 import '../models/flood_warning_model.dart';
 
-/// A controller class for the FloodWarningScreen.
-///
-/// This class manages the state of the FloodWarningScreen, including the
-/// current floodWarningModelObj
 class FloodWarningController extends GetxController {
   Rx<FloodWarningModel> floodWarningModelObj = FloodWarningModel().obs;
 
   String district = '';
   String waterLevel = "";
   String rainfall = "";
-  String temperature = "";
   bool result = false;
   DateTime dateTime = DateTime.now();
 
   @override
   void onInit() {
-    // TODO: implement onInit
     super.onInit();
-    Map<String, dynamic>? args = Get.arguments as Map<String, dynamic>?;
+
+    final Map<String, dynamic>? args =
+    Get.arguments as Map<String, dynamic>?;
 
     if (args != null) {
-      district = args['district'];
-      waterLevel = args['waterLevel'];
-      rainfall = args['rainfall'];
-      temperature = args['temperature'];
-      result = args['prediction'];
+      district = args['district'] ?? '';
+      waterLevel = args['waterLevel'] ?? '';
+      rainfall = args['rainfall'] ?? '';
+      result = args['prediction'] ?? false;
     }
   }
 
   Future<void> savePrediction(BuildContext context) async {
     try {
-      // Get current user
       User? user = FirebaseAuth.instance.currentUser;
 
       if (user != null) {
@@ -49,7 +43,6 @@ class FloodWarningController extends GetxController {
           'District': district,
           'Water Level': waterLevel,
           'Rainfall': rainfall,
-          'Temperature': temperature,
           'Flood Prediction': result,
           'Date': dateTime,
           'status': 'process',
@@ -63,7 +56,6 @@ class FloodWarningController extends GetxController {
         );
       }
     } catch (e) {
-      print(e);
       showTopSnackBar(
         Overlay.of(context),
         CustomSnackBar.error(
@@ -73,14 +65,15 @@ class FloodWarningController extends GetxController {
     }
   }
 
-  onSuccess(BuildContext context) {
+  void onSuccess(BuildContext context) {
     showTopSnackBar(
       Overlay.of(context),
       CustomSnackBar.success(
         message: "Prediction Saved Successfully",
       ),
     );
-    Future.delayed(Duration(seconds: 2), () {
+
+    Future.delayed(const Duration(seconds: 2), () {
       Get.back();
     });
   }
